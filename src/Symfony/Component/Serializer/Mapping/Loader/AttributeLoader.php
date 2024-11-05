@@ -95,8 +95,8 @@ class AttributeLoader implements LoaderInterface
 
                     match (true) {
                         $attribute instanceof MaxDepth => $attributeMetadata->setMaxDepth($attribute->getMaxDepth()),
-                        $attribute instanceof SerializedName => $this->setAttributeSerializedNameForGroups($attribute, $attributesMetadata[$property->name]),
-                        $attribute instanceof SerializedPath => $this->setAttributeSerializedPathForGroups($attribute, $attributesMetadata[$property->name]),
+                        $attribute instanceof SerializedName => $this->setAttributeSerializedNameForGroups($attribute, $attributeMetadata),
+                        $attribute instanceof SerializedPath => $this->setAttributeSerializedPathForGroups($attribute, $attributeMetadata),
                         $attribute instanceof Ignore => $attributeMetadata->setIgnore(true),
                         $attribute instanceof Context => $this->setAttributeContextsForGroups($attribute, $attributeMetadata),
                         default => null,

@@ -273,6 +273,9 @@ class AttributeMetadata implements AttributeMetadataInterface
     }
 
     /**
+     * BC layer for extraction of serialized names from attribute metadata.
+     * Can be removed as soon as AttributeMetadataInterface::getSerializedNames() become part of the interface.
+     *
      * @internal
      *
      * @return array<string, string>
@@ -291,6 +294,9 @@ class AttributeMetadata implements AttributeMetadataInterface
     }
 
     /**
+     * BC layer for extraction of serialized paths from attribute metadata.
+     * Can be removed as soon as AttributeMetadataInterface::getSerializedPaths() become part of the interface.
+     *
      * @internal
      *
      * @return array<string, PropertyPath>

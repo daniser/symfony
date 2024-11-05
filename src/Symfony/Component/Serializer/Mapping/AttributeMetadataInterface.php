@@ -22,8 +22,8 @@ use Symfony\Component\PropertyAccess\PropertyPath;
  *
  * @author Kévin Dunglas <dunglas@gmail.com>
  *
- * @method string[]       getSerializedNames() Gets all the serialized names per group ("*" being the base name applied to all groups).
- * @method PropertyPath[] getSerializedPaths() Gets all the serialized paths per group ("*" being the base path applied to all groups).
+ * @method string[]       getSerializedNames() Gets all the serialized names per group.
+ * @method PropertyPath[] getSerializedPaths() Gets all the serialized paths per group.
  */
 interface AttributeMetadataInterface
 {
