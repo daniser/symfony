@@ -116,7 +116,7 @@ class AttributeMetadata implements AttributeMetadataInterface
 
     public function setSerializedName(?string $serializedName /* , array $groups = ['*'] */): void
     {
-        $groups = 2 <= \func_num_args() ? (func_get_arg(1) ?: ['*']) : ['*'];
+        $groups = \func_get_args()[1] ?? ['*'];
 
         if (isset($serializedName)) {
             foreach ($groups as $group) {
@@ -131,7 +131,7 @@ class AttributeMetadata implements AttributeMetadataInterface
 
     public function getSerializedName(/* array $groups = ['*'] */): ?string
     {
-        $groups = 1 <= \func_num_args() ? func_get_arg(0) : ['*'];
+        $groups = \func_get_args()[0] ?? ['*'];
 
         foreach ($groups as $group) {
             if (isset($this->serializedNames[$group])) {
@@ -149,7 +149,7 @@ class AttributeMetadata implements AttributeMetadataInterface
 
     public function setSerializedPath(?PropertyPath $serializedPath = null /* , array $groups = ['*'] */): void
     {
-        $groups = 2 <= \func_num_args() ? (func_get_arg(1) ?: ['*']) : ['*'];
+        $groups = \func_get_args()[1] ?? ['*'];
 
         if (isset($serializedPath)) {
             foreach ($groups as $group) {
@@ -164,7 +164,7 @@ class AttributeMetadata implements AttributeMetadataInterface
 
     public function getSerializedPath(/* array $groups = ['*'] */): ?PropertyPath
     {
-        $groups = 1 <= \func_num_args() ? func_get_arg(0) : ['*'];
+        $groups = \func_get_args()[0] ?? ['*'];
 
         foreach ($groups as $group) {
             if (isset($this->serializedPaths[$group])) {
