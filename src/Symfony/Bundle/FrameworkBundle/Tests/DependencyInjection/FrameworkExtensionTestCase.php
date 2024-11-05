@@ -58,7 +58,6 @@ use Symfony\Component\HttpClient\ThrottlingHttpClient;
 use Symfony\Component\HttpFoundation\IpUtils;
 use Symfony\Component\HttpKernel\DependencyInjection\LoggerPass;
 use Symfony\Component\HttpKernel\Fragment\FragmentUriGeneratorInterface;
-use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\Store\SemaphoreStore;
 use Symfony\Component\Messenger\Bridge\AmazonSqs\Transport\AmazonSqsTransportFactory;
 use Symfony\Component\Messenger\Bridge\Amqp\Transport\AmqpTransportFactory;
@@ -69,7 +68,6 @@ use Symfony\Component\Notifier\ChatterInterface;
 use Symfony\Component\Notifier\TexterInterface;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Symfony\Component\Security\Core\AuthenticationEvents;
-use Symfony\Component\Semaphore\SemaphoreFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AttributeLoader;
 use Symfony\Component\Serializer\Mapping\Loader\XmlFileLoader;
 use Symfony\Component\Serializer\Mapping\Loader\YamlFileLoader;
@@ -691,7 +689,7 @@ abstract class FrameworkExtensionTestCase extends TestCase
         $this->assertNull($container->getParameter('session.save_path'));
         $this->assertSame('session.handler.native', (string) $container->getAlias('session.handler'));
 
-        $expected = ['session_factory', 'logger', 'session_collector'];
+        $expected = ['session_factory', 'logger', 'session_collector', 'request_stack'];
         $this->assertEquals($expected, array_keys($container->getDefinition('session_listener')->getArgument(0)->getValues()));
         $this->assertFalse($container->getDefinition('session.storage.factory.native')->getArgument(3));
     }
@@ -1928,7 +1926,7 @@ abstract class FrameworkExtensionTestCase extends TestCase
     {
         $container = $this->createContainerFromFile('session_cookie_secure_auto');
 
-        $expected = ['session_factory', 'logger', 'session_collector'];
+        $expected = ['session_factory', 'logger', 'session_collector', 'request_stack'];
         $this->assertEquals($expected, array_keys($container->getDefinition('session_listener')->getArgument(0)->getValues()));
     }
 
@@ -2425,9 +2423,9 @@ abstract class FrameworkExtensionTestCase extends TestCase
         $storeDef = $container->getDefinition($container->getDefinition('lock.default.factory')->getArgument(0));
 
         if (class_exists(SemaphoreStore::class) && SemaphoreStore::isSupported()) {
-            self::assertEquals(new Reference('semaphore'), $storeDef->getArgument(0));
+            self::assertSame('semaphore', $storeDef->getArgument(0));
         } else {
-            self::assertEquals(new Reference('flock'), $storeDef->getArgument(0));
+            self::assertSame('flock', $storeDef->getArgument(0));
         }
     }
 
@@ -2437,23 +2435,35 @@ abstract class FrameworkExtensionTestCase extends TestCase
 
         self::assertTrue($container->hasDefinition('lock.foo.factory'));
         $storeDef = $container->getDefinition($container->getDefinition('lock.foo.factory')->getArgument(0));
-        self::assertEquals(new Reference('semaphore'), $storeDef->getArgument(0));
+        self::assertSame('semaphore', $storeDef->getArgument(0));
 
         self::assertTrue($container->hasDefinition('lock.bar.factory'));
         $storeDef = $container->getDefinition($container->getDefinition('lock.bar.factory')->getArgument(0));
-        self::assertEquals(new Reference('flock'), $storeDef->getArgument(0));
+        self::assertSame('flock', $storeDef->getArgument(0));
 
         self::assertTrue($container->hasDefinition('lock.baz.factory'));
         $storeDef = $container->getDefinition($container->getDefinition('lock.baz.factory')->getArgument(0));
         self::assertIsArray($storeDefArg = $storeDef->getArgument(0));
         $storeDef1 = $container->getDefinition($storeDefArg[0]);
         $storeDef2 = $container->getDefinition($storeDefArg[1]);
-        self::assertEquals(new Reference('semaphore'), $storeDef1->getArgument(0));
-        self::assertEquals(new Reference('flock'), $storeDef2->getArgument(0));
+        self::assertSame('semaphore', $storeDef1->getArgument(0));
+        self::assertSame('flock', $storeDef2->getArgument(0));
 
         self::assertTrue($container->hasDefinition('lock.qux.factory'));
         $storeDef = $container->getDefinition($container->getDefinition('lock.qux.factory')->getArgument(0));
         self::assertStringContainsString('REDIS_DSN', $storeDef->getArgument(0));
+
+        self::assertTrue($container->hasDefinition('lock.corge.factory'));
+        $storeDef = $container->getDefinition($container->getDefinition('lock.corge.factory')->getArgument(0));
+        self::assertSame('in-memory', $storeDef->getArgument(0));
+
+        self::assertTrue($container->hasDefinition('lock.grault.factory'));
+        $storeDef = $container->getDefinition($container->getDefinition('lock.grault.factory')->getArgument(0));
+        self::assertSame('mysql:host=localhost;dbname=test', $storeDef->getArgument(0));
+
+        self::assertTrue($container->hasDefinition('lock.garply.factory'));
+        $storeDef = $container->getDefinition($container->getDefinition('lock.garply.factory')->getArgument(0));
+        self::assertSame('null', $storeDef->getArgument(0));
     }
 
     public function testLockWithService()
@@ -2465,8 +2475,6 @@ abstract class FrameworkExtensionTestCase extends TestCase
         self::assertTrue($container->hasDefinition('lock.default.factory'));
         $storeDef = $container->getDefinition($container->getDefinition('lock.default.factory')->getArgument(0));
         self::assertEquals(new Reference('my_service'), $storeDef->getArgument(0));
-
-        self::assertInstanceOf(LockFactory::class, $container->get('factory_public_alias'));
     }
 
     public function testDefaultSemaphore()
@@ -2500,8 +2508,6 @@ abstract class FrameworkExtensionTestCase extends TestCase
         self::assertTrue($container->hasDefinition('semaphore.default.factory'));
         $storeDef = $container->getDefinition($container->getDefinition('semaphore.default.factory')->getArgument(0));
         self::assertEquals(new Reference('my_service'), $storeDef->getArgument(0));
-
-        self::assertInstanceOf(SemaphoreFactory::class, $container->get('factory_public_alias'));
     }
 
     protected function createContainer(array $data = [])

@@ -17,8 +17,8 @@ use Twig\Compiler;
 use Twig\Environment;
 use Twig\Loader\LoaderInterface;
 use Twig\Node\Expression\NameExpression;
+use Twig\Node\Expression\Variable\ContextVariable;
 use Twig\Node\TextNode;
-use Twig\Runtime\LoopIterator;
 
 /**
  * @author Asmir Mustafic <goetas@gmail.com>
@@ -28,7 +28,7 @@ class TransNodeTest extends TestCase
     public function testCompileStrict()
     {
         $body = new TextNode('trans %var%', 0);
-        $vars = new NameExpression('foo', 0);
+        $vars = class_exists(ContextVariable::class) ? new ContextVariable('foo', 0) : new NameExpression('foo', 0);
         $node = new TransNode($body, null, null, $vars);
 
         $env = new Environment($this->createMock(LoaderInterface::class), ['strict_variables' => true]);
@@ -51,11 +51,6 @@ class TransNodeTest extends TestCase
 
     protected function getVariableGetterWithStrictCheck($name)
     {
-        if (class_exists(LoopIterator::class)) {
-            return \sprintf('(array_key_exists("%1$s", $context) ? $context["%1$s"] : throw new RuntimeError(\'Variable "%1$s" does not exist.\', 0, $this->source))', $name);
-        }
-
-        // for Twig 3 and older, can be removed when support for Twig 3 is dropped
         return \sprintf('(isset($context["%1$s"]) || array_key_exists("%1$s", $context) ? $context["%1$s"] : (function () { throw new RuntimeError(\'Variable "%1$s" does not exist.\', 0, $this->source); })())', $name);
     }
 }

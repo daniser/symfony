@@ -4,6 +4,7 @@ CHANGELOG
 7.2
 ---
 
+ * Add support for `--sort` option when extracting translations with `translation:extract` command and `--force` option
  * Add support for setting `headers` with `Symfony\Bundle\FrameworkBundle\Controller\TemplateController`
  * Add `--resolve-env-vars` option to `lint:container` command
  * Derivate `kernel.secret` from the decryption secret when its env var is not defined
@@ -13,9 +14,13 @@ CHANGELOG
  * Deprecate making `cache.app` adapter taggable, use the `cache.app.taggable` adapter instead
  * Enable `json_decode_detailed_errors` in the default serializer context in debug mode by default when `seld/jsonlint` is installed
  * Register `Symfony\Component\Serializer\NameConverter\SnakeCaseToCamelCaseNameConverter` as a service named `serializer.name_converter.snake_case_to_camel_case` if available
+ * Add `framework.csrf_protection.stateless_token_ids`, `.cookie_name`, and `.check_header` options to use stateless headers/cookies-based CSRF protection
+ * Add `framework.form.csrf_protection.field_attr` option
  * Deprecate `session.sid_length` and `session.sid_bits_per_character` config options
  * Add the ability to use an existing service as a lock/semaphore resource
  * Add support for configuring multiple serializer instances via the configuration
+ * Add support for `SYMFONY_TRUSTED_PROXIES`, `SYMFONY_TRUSTED_HEADERS`, `SYMFONY_TRUST_X_SENDFILE_TYPE_HEADER` and `SYMFONY_TRUSTED_HOSTS` env vars
+ * Add `--no-fill` option to `translation:extract` command
 
 7.1
 ---

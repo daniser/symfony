@@ -12,7 +12,6 @@
 namespace Symfony\Component\Form\Extension\Core\Type;
 
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Event\PreSubmitEvent;
 use Symfony\Component\Form\Exception\InvalidConfigurationException;
 use Symfony\Component\Form\Exception\LogicException;
 use Symfony\Component\Form\Extension\Core\DataTransformer\DateTimeImmutableToDateTimeTransformer;
@@ -275,10 +274,8 @@ class TimeType extends AbstractType
 
         $choiceTranslationDomainNormalizer = static function (Options $options, $choiceTranslationDomain) {
             if (\is_array($choiceTranslationDomain)) {
-                $default = false;
-
                 return array_replace(
-                    ['hour' => $default, 'minute' => $default, 'second' => $default],
+                    ['hour' => false, 'minute' => false, 'second' => false],
                     $choiceTranslationDomain
                 );
             }

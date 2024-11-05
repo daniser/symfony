@@ -52,6 +52,7 @@ final class UnsupportedSchemeExceptionTest extends TestCase
             Bridge\Isendpro\IsendproTransportFactory::class => false,
             Bridge\KazInfoTeh\KazInfoTehTransportFactory::class => false,
             Bridge\LightSms\LightSmsTransportFactory::class => false,
+            Bridge\LineBot\LineBotTransportFactory::class => false,
             Bridge\LineNotify\LineNotifyTransportFactory::class => false,
             Bridge\LinkedIn\LinkedInTransportFactory::class => false,
             Bridge\Lox24\Lox24TransportFactory::class => false,
@@ -93,6 +94,7 @@ final class UnsupportedSchemeExceptionTest extends TestCase
             Bridge\Smsmode\SmsmodeTransportFactory::class => false,
             Bridge\SmsSluzba\SmsSluzbaTransportFactory::class => false,
             Bridge\SpotHit\SpotHitTransportFactory::class => false,
+            Bridge\Sweego\SweegoTransportFactory::class => false,
             Bridge\Telegram\TelegramTransportFactory::class => false,
             Bridge\Telnyx\TelnyxTransportFactory::class => false,
             Bridge\Termii\TermiiTransportFactory::class => false,
@@ -147,6 +149,7 @@ final class UnsupportedSchemeExceptionTest extends TestCase
         yield ['isendpro', 'symfony/isendpro-notifier'];
         yield ['kaz-info-teh', 'symfony/kaz-info-teh-notifier'];
         yield ['lightsms', 'symfony/light-sms-notifier'];
+        yield ['linebot', 'symfony/line-bot-notifier'];
         yield ['linenotify', 'symfony/line-notify-notifier'];
         yield ['linkedin', 'symfony/linked-in-notifier'];
         yield ['lox24', 'symfony/lox24-notifier'];

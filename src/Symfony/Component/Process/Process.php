@@ -85,6 +85,7 @@ class Process implements \IteratorAggregate
     private ?int $cachedExitCode = null;
 
     private static ?bool $sigchild = null;
+    private static array $executables = [];
 
     /**
      * Exit codes translation table.
@@ -1543,6 +1544,12 @@ class Process implements \IteratorAggregate
             return $commandline;
         }
 
+        if ('\\' === \DIRECTORY_SEPARATOR && isset($commandline[0][0]) && \strlen($commandline[0]) === strcspn($commandline[0], ':/\\')) {
+            // On Windows, we don't rely on the OS to find the executable if possible to avoid lookups
+            // in the current directory which could be untrusted. Instead we use the ExecutableFinder.
+            $commandline[0] = (self::$executables[$commandline[0]] ??= (new ExecutableFinder())->find($commandline[0])) ?? $commandline[0];
+        }
+
         return implode(' ', array_map($this->escapeArgument(...), $commandline));
     }
 
@@ -1631,7 +1638,7 @@ class Process implements \IteratorAggregate
         if (str_contains($argument, "\0")) {
             $argument = str_replace("\0", '?', $argument);
         }
-        if (!preg_match('/[\/()%!^"<>&|\s]/', $argument)) {
+        if (!preg_match('/[()%!^"<>&|\s]/', $argument)) {
             return $argument;
         }
         $argument = preg_replace('/(\\\\+)$/', '$1$1', $argument);

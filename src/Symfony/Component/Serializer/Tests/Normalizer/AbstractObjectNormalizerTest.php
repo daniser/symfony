@@ -15,6 +15,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\PhpStanExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
+use Symfony\Component\PropertyInfo\PropertyDocBlockExtractorInterface;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\PropertyInfo\Type as LegacyType;
 use Symfony\Component\Serializer\Attribute\Context;
@@ -1191,7 +1192,7 @@ class AbstractObjectNormalizerTest extends TestCase
         $normalizer->denormalize($data, $type);
     }
 
-    public function provideBooleanTypesData()
+    public static function provideBooleanTypesData()
     {
         return [
             [['foo' => true], FalsePropertyDummy::class],
@@ -1229,7 +1230,7 @@ class AbstractObjectNormalizerTest extends TestCase
 
     public function testDenormalizeArrayObject()
     {
-        $normalizer = new class() extends AbstractObjectNormalizerDummy {
+        $normalizer = new class extends AbstractObjectNormalizerDummy {
             public function __construct()
             {
                 parent::__construct(null, null, new PhpDocExtractor());
@@ -1274,6 +1275,10 @@ class AbstractObjectNormalizerTest extends TestCase
 
     public function testDenormalizeTemplateType()
     {
+        if (!interface_exists(PropertyDocBlockExtractorInterface::class)) {
+            $this->markTestSkipped('The PropertyInfo component before Symfony 7.1 does not support template types.');
+        }
+
         $normalizer = new class (
             classMetadataFactory: new ClassMetadataFactory(new AttributeLoader()),
             propertyTypeExtractor: new PropertyInfoExtractor(typeExtractors: [new PhpStanExtractor(), new ReflectionExtractor()])

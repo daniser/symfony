@@ -19,6 +19,14 @@ namespace Symfony\Component\Process;
  */
 class ExecutableFinder
 {
+    private const CMD_BUILTINS = [
+        'assoc', 'break', 'call', 'cd', 'chdir', 'cls', 'color', 'copy', 'date',
+        'del', 'dir', 'echo', 'endlocal', 'erase', 'exit', 'for', 'ftype', 'goto',
+        'help', 'if', 'label', 'md', 'mkdir', 'mklink', 'move', 'path', 'pause',
+        'popd', 'prompt', 'pushd', 'rd', 'rem', 'ren', 'rename', 'rmdir', 'set',
+        'setlocal', 'shift', 'start', 'time', 'title', 'type', 'ver', 'vol',
+    ];
+
     private array $suffixes = [];
 
     public function __construct()
@@ -57,6 +65,11 @@ class ExecutableFinder
      */
     public function find(string $name, ?string $default = null, array $extraDirs = []): ?string
     {
+        // windows built-in commands that are present in cmd.exe should not be resolved using PATH as they do not exist as exes
+        if ('\\' === \DIRECTORY_SEPARATOR && \in_array(strtolower($name), self::CMD_BUILTINS, true)) {
+            return $name;
+        }
+
         $dirs = array_merge(
             explode(\PATH_SEPARATOR, getenv('PATH') ?: getenv('Path')),
             $extraDirs
@@ -69,6 +82,9 @@ class ExecutableFinder
         $suffixes = array_merge($suffixes, $this->suffixes);
         foreach ($suffixes as $suffix) {
             foreach ($dirs as $dir) {
+                if ('' === $dir) {
+                    $dir = '.';
+                }
                 if (@is_file($file = $dir.\DIRECTORY_SEPARATOR.$name.$suffix) && ('\\' === \DIRECTORY_SEPARATOR || @is_executable($file))) {
                     return $file;
                 }
@@ -79,12 +95,12 @@ class ExecutableFinder
             }
         }
 
-        if (!\function_exists('exec')) {
+        if (!\function_exists('exec') || \strlen($name) !== strcspn($name, '/'.\DIRECTORY_SEPARATOR)) {
             return $default;
         }
 
-        $command = '\\' === \DIRECTORY_SEPARATOR ? 'where' : 'command -v --';
-        $execResult = @exec($command.' '.escapeshellarg($name));
+        $command = '\\' === \DIRECTORY_SEPARATOR ? 'where %s 2> NUL' : 'command -v -- %s';
+        $execResult = exec(\sprintf($command, escapeshellarg($name)));
 
         if (($executablePath = substr($execResult, 0, strpos($execResult, \PHP_EOL) ?: null)) && @is_executable($executablePath)) {
             return $executablePath;

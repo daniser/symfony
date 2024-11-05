@@ -1168,7 +1168,7 @@ class Request
         }
 
         if (!preg_match('/^[A-Z]++$/D', $method)) {
-            throw new SuspiciousOperationException(\sprintf('Invalid method override "%s".', $method));
+            throw new SuspiciousOperationException('Invalid HTTP method override.');
         }
 
         return $this->method = $method;
@@ -1536,7 +1536,7 @@ class Request
             return $preferredLanguages[0] ?? null;
         }
 
-        $locales = array_map($this->formatLocale(...), $locales ?? []);
+        $locales = array_map($this->formatLocale(...), $locales);
         if (!$preferredLanguages) {
             return $locales[0];
         }
@@ -1572,7 +1572,7 @@ class Request
         $this->languages = [];
         foreach ($languages as $acceptHeaderItem) {
             $lang = $acceptHeaderItem->getValue();
-            $this->languages[] = $this->formatLocale($lang);
+            $this->languages[] = self::formatLocale($lang);
         }
         $this->languages = array_unique($this->languages);
 

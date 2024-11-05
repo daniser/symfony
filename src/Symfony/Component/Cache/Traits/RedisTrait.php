@@ -199,7 +199,7 @@ trait RedisTrait
                 \extension_loaded('relay') => Relay::class,
                 default => \Predis\Client::class,
             },
-            1 < \count($hosts) && \extension_loaded('redis') => 1 < \count($hosts) ? \RedisArray::class : \Redis::class,
+            1 < \count($hosts) && \extension_loaded('redis') => \RedisArray::class,
             \extension_loaded('redis') => \Redis::class,
             \extension_loaded('relay') => Relay::class,
             default => \Predis\Client::class,
@@ -252,10 +252,10 @@ trait RedisTrait
                         } else {
                             $extra = $passAuth ? [$params['auth']] : [];
 
-                            $sentinel = new $sentinelClass($host, $port, $params['timeout'], (string) $params['persistent_id'], $params['retry_interval'], $params['read_timeout'], ...$extra);
+                            $sentinel = @new $sentinelClass($host, $port, $params['timeout'], (string) $params['persistent_id'], $params['retry_interval'], $params['read_timeout'], ...$extra);
                         }
 
-                        if ($address = $sentinel->getMasterAddrByName($params['redis_sentinel'])) {
+                        if ($address = @$sentinel->getMasterAddrByName($params['redis_sentinel'])) {
                             [$host, $port] = $address;
                         }
                     } catch (\RedisException|\Relay\Exception $redisException) {
@@ -614,7 +614,7 @@ trait RedisTrait
                 }
             });
         } elseif ($redis instanceof \RedisArray) {
-            $connections = $results = $ids = [];
+            $connections = $results = [];
             foreach ($generator() as $command => $args) {
                 $id = 'eval' === $command ? $args[1][0] : $args[0];
                 if (!isset($connections[$h = $redis->_target($id)])) {

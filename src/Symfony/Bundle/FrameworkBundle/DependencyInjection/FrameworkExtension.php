@@ -309,18 +309,18 @@ class FrameworkExtension extends Extension
         if (isset($config['secret'])) {
             $container->setParameter('kernel.secret', $config['secret']);
         }
-        $container->nonEmptyParameter('kernel.secret', 'A non-empty value for the parameter "kernel.secret" is required. Did you forget to configure the "framework.secret" option?');
+        $container->parameterCannotBeEmpty('kernel.secret', 'A non-empty value for the parameter "kernel.secret" is required. Did you forget to configure the "framework.secret" option?');
 
         $container->setParameter('kernel.http_method_override', $config['http_method_override']);
         $container->setParameter('kernel.trust_x_sendfile_type_header', $config['trust_x_sendfile_type_header']);
-        $container->setParameter('kernel.trusted_hosts', $config['trusted_hosts']);
+        $container->setParameter('kernel.trusted_hosts', [0] === array_keys($config['trusted_hosts']) ? $config['trusted_hosts'][0] : $config['trusted_hosts']);
         $container->setParameter('kernel.default_locale', $config['default_locale']);
         $container->setParameter('kernel.enabled_locales', $config['enabled_locales']);
         $container->setParameter('kernel.error_controller', $config['error_controller']);
 
         if (($config['trusted_proxies'] ?? false) && ($config['trusted_headers'] ?? false)) {
-            $container->setParameter('kernel.trusted_proxies', $config['trusted_proxies']);
-            $container->setParameter('kernel.trusted_headers', $this->resolveTrustedHeaders($config['trusted_headers']));
+            $container->setParameter('kernel.trusted_proxies', \is_array($config['trusted_proxies']) && [0] === array_keys($config['trusted_proxies']) ? $config['trusted_proxies'][0] : $config['trusted_proxies']);
+            $container->setParameter('kernel.trusted_headers', [0] === array_keys($config['trusted_headers']) ? $config['trusted_headers'][0] : $config['trusted_headers']);
         }
 
         if (!$container->hasParameter('debug.file_link_format')) {
@@ -464,7 +464,7 @@ class FrameworkExtension extends Extension
 
         // csrf depends on session being registered
         if (null === $config['csrf_protection']['enabled']) {
-            $this->writeConfigEnabled('csrf_protection', $this->readConfigEnabled('session', $container, $config['session']) && !class_exists(FullStack::class) && ContainerBuilder::willBeAvailable('symfony/security-csrf', CsrfTokenManagerInterface::class, ['symfony/framework-bundle']), $config['csrf_protection']);
+            $this->writeConfigEnabled('csrf_protection', $config['csrf_protection']['stateless_token_ids'] || $this->readConfigEnabled('session', $container, $config['session']) && !class_exists(FullStack::class) && ContainerBuilder::willBeAvailable('symfony/security-csrf', CsrfTokenManagerInterface::class, ['symfony/framework-bundle']), $config['csrf_protection']);
         }
         $this->registerSecurityCsrfConfiguration($config['csrf_protection'], $container, $loader);
 
@@ -765,6 +765,10 @@ class FrameworkExtension extends Extension
 
             $container->setParameter('form.type_extension.csrf.enabled', true);
             $container->setParameter('form.type_extension.csrf.field_name', $config['form']['csrf_protection']['field_name']);
+            $container->setParameter('form.type_extension.csrf.field_attr', $config['form']['csrf_protection']['field_attr']);
+
+            $container->getDefinition('form.type_extension.csrf')
+                ->replaceArgument(7, $config['form']['csrf_protection']['token_id']);
         } else {
             $container->setParameter('form.type_extension.csrf.enabled', false);
         }
@@ -1815,8 +1819,7 @@ class FrameworkExtension extends Extension
         if (!class_exists(\Symfony\Component\Security\Csrf\CsrfToken::class)) {
             throw new LogicException('CSRF support cannot be enabled as the Security CSRF component is not installed. Try running "composer require symfony/security-csrf".');
         }
-
-        if (!$this->isInitializedConfigEnabled('session')) {
+        if (!$config['stateless_token_ids'] && !$this->isInitializedConfigEnabled('session')) {
             throw new \LogicException('CSRF protection needs sessions to be enabled.');
         }
 
@@ -1825,6 +1828,24 @@ class FrameworkExtension extends Extension
 
         if (!class_exists(CsrfExtension::class)) {
             $container->removeDefinition('twig.extension.security_csrf');
+        }
+
+        if (!$config['stateless_token_ids']) {
+            $container->removeDefinition('security.csrf.same_origin_token_manager');
+
+            return;
+        }
+
+        $container->getDefinition('security.csrf.same_origin_token_manager')
+            ->replaceArgument(3, $config['stateless_token_ids'])
+            ->replaceArgument(4, $config['check_header'])
+            ->replaceArgument(5, $config['cookie_name']);
+
+        if (!$this->isInitializedConfigEnabled('session')) {
+            $container->setAlias('security.csrf.token_manager', 'security.csrf.same_origin_token_manager');
+            $container->getDefinition('security.csrf.same_origin_token_manager')
+                ->setDecoratedService(null)
+                ->replaceArgument(2, null);
         }
     }
 
@@ -2007,8 +2028,12 @@ class FrameworkExtension extends Extension
             // Generate stores
             $storeDefinitions = [];
             foreach ($resourceStores as $resourceStore) {
+                if (null === $resourceStore) {
+                    $resourceStore = 'null';
+                }
+
                 $storeDsn = $container->resolveEnvPlaceholders($resourceStore, null, $usedEnvs);
-                if (!$usedEnvs && !str_contains($resourceStore, '://')) {
+                if (!$usedEnvs && !str_contains($resourceStore, ':') && !\in_array($resourceStore, ['flock', 'semaphore', 'in-memory', 'null'], true)) {
                     $resourceStore = new Reference($resourceStore);
                 }
                 $storeDefinition = new Definition(PersistingStoreInterface::class);
@@ -2677,10 +2702,12 @@ class FrameworkExtension extends Extension
             $webhookRequestParsers = [
                 MailerBridge\Brevo\Webhook\BrevoRequestParser::class => 'mailer.webhook.request_parser.brevo',
                 MailerBridge\MailerSend\Webhook\MailerSendRequestParser::class => 'mailer.webhook.request_parser.mailersend',
+                MailerBridge\Mailchimp\Webhook\MailchimpRequestParser::class => 'mailer.webhook.request_parser.mailchimp',
                 MailerBridge\Mailgun\Webhook\MailgunRequestParser::class => 'mailer.webhook.request_parser.mailgun',
                 MailerBridge\Mailjet\Webhook\MailjetRequestParser::class => 'mailer.webhook.request_parser.mailjet',
                 MailerBridge\Mailomat\Webhook\MailomatRequestParser::class => 'mailer.webhook.request_parser.mailomat',
                 MailerBridge\Postmark\Webhook\PostmarkRequestParser::class => 'mailer.webhook.request_parser.postmark',
+                MailerBridge\Mailtrap\Webhook\MailtrapRequestParser::class => 'mailer.webhook.request_parser.mailtrap',
                 MailerBridge\Resend\Webhook\ResendRequestParser::class => 'mailer.webhook.request_parser.resend',
                 MailerBridge\Sendgrid\Webhook\SendgridRequestParser::class => 'mailer.webhook.request_parser.sendgrid',
                 MailerBridge\Sweego\Webhook\SweegoRequestParser::class => 'mailer.webhook.request_parser.sweego',
@@ -2816,6 +2843,7 @@ class FrameworkExtension extends Extension
             NotifierBridge\JoliNotif\JoliNotifTransportFactory::class => 'notifier.transport_factory.joli-notif',
             NotifierBridge\KazInfoTeh\KazInfoTehTransportFactory::class => 'notifier.transport_factory.kaz-info-teh',
             NotifierBridge\LightSms\LightSmsTransportFactory::class => 'notifier.transport_factory.light-sms',
+            NotifierBridge\LineBot\LineBotTransportFactory::class => 'notifier.transport_factory.line-bot',
             NotifierBridge\LineNotify\LineNotifyTransportFactory::class => 'notifier.transport_factory.line-notify',
             NotifierBridge\LinkedIn\LinkedInTransportFactory::class => 'notifier.transport_factory.linked-in',
             NotifierBridge\Lox24\Lox24TransportFactory::class => 'notifier.transport_factory.lox24',
@@ -2857,6 +2885,7 @@ class FrameworkExtension extends Extension
             NotifierBridge\SmsSluzba\SmsSluzbaTransportFactory::class => 'notifier.transport_factory.sms-sluzba',
             NotifierBridge\Smsense\SmsenseTransportFactory::class => 'notifier.transport_factory.smsense',
             NotifierBridge\SpotHit\SpotHitTransportFactory::class => 'notifier.transport_factory.spot-hit',
+            NotifierBridge\Sweego\SweegoTransportFactory::class => 'notifier.transport_factory.sweego',
             NotifierBridge\Telegram\TelegramTransportFactory::class => 'notifier.transport_factory.telegram',
             NotifierBridge\Telnyx\TelnyxTransportFactory::class => 'notifier.transport_factory.telnyx',
             NotifierBridge\Termii\TermiiTransportFactory::class => 'notifier.transport_factory.termii',
@@ -2924,6 +2953,7 @@ class FrameworkExtension extends Extension
             $loader->load('notifier_webhook.php');
 
             $webhookRequestParsers = [
+                NotifierBridge\Sweego\Webhook\SweegoRequestParser::class => 'notifier.webhook.request_parser.sweego',
                 NotifierBridge\Twilio\Webhook\TwilioRequestParser::class => 'notifier.webhook.request_parser.twilio',
                 NotifierBridge\Vonage\Webhook\VonageRequestParser::class => 'notifier.webhook.request_parser.vonage',
             ];
@@ -3112,25 +3142,6 @@ class FrameworkExtension extends Extension
                 $container->registerAliasForArgument($sanitizerId, HtmlSanitizerInterface::class, $sanitizerName);
             }
         }
-    }
-
-    private function resolveTrustedHeaders(array $headers): int
-    {
-        $trustedHeaders = 0;
-
-        foreach ($headers as $h) {
-            $trustedHeaders |= match ($h) {
-                'forwarded' => Request::HEADER_FORWARDED,
-                'x-forwarded-for' => Request::HEADER_X_FORWARDED_FOR,
-                'x-forwarded-host' => Request::HEADER_X_FORWARDED_HOST,
-                'x-forwarded-proto' => Request::HEADER_X_FORWARDED_PROTO,
-                'x-forwarded-port' => Request::HEADER_X_FORWARDED_PORT,
-                'x-forwarded-prefix' => Request::HEADER_X_FORWARDED_PREFIX,
-                default => 0,
-            };
-        }
-
-        return $trustedHeaders;
     }
 
     public function getXsdValidationBasePath(): string|false

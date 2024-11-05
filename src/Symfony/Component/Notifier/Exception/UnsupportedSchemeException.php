@@ -124,6 +124,10 @@ class UnsupportedSchemeException extends LogicException
             'class' => Bridge\LightSms\LightSmsTransportFactory::class,
             'package' => 'symfony/light-sms-notifier',
         ],
+        'linebot' => [
+            'class' => Bridge\LineBot\LineBotTransportFactory::class,
+            'package' => 'symfony/line-bot-notifier',
+        ],
         'linenotify' => [
             'class' => Bridge\LineNotify\LineNotifyTransportFactory::class,
             'package' => 'symfony/line-notify-notifier',
@@ -291,6 +295,10 @@ class UnsupportedSchemeException extends LogicException
         'spothit' => [
             'class' => Bridge\SpotHit\SpotHitTransportFactory::class,
             'package' => 'symfony/spot-hit-notifier',
+        ],
+        'sweego' => [
+            'class' => Bridge\Sweego\SweegoTransportFactory::class,
+            'package' => 'symfony/sweego-notifier',
         ],
         'telegram' => [
             'class' => Bridge\Telegram\TelegramTransportFactory::class,
