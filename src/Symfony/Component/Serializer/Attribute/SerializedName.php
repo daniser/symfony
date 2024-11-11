@@ -33,7 +33,7 @@ class SerializedName
             throw new InvalidArgumentException(\sprintf('Parameter given to "%s" must be a non-empty string.', self::class));
         }
 
-        $this->groups = (array) $groups;
+        $this->groups = ((array) $groups) ?: ['*'];
 
         foreach ($this->groups as $group) {
             if (!\is_string($group)) {
