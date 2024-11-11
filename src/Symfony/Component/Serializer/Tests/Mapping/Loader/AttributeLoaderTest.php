@@ -111,8 +111,8 @@ class AttributeLoaderTest extends TestCase
         $attributesMetadata = $classMetadata->getAttributesMetadata();
         $this->assertEquals('baz', $attributesMetadata['foo']->getSerializedName());
         $this->assertEquals('qux', $attributesMetadata['bar']->getSerializedName());
-        $this->assertSame('duxi', $attributesMetadata['duux']->getSerializedName());
-        $this->assertSame('duxa', $attributesMetadata['duux']->getSerializedName(['a']));
+        $this->assertEquals('duxi', $attributesMetadata['duux']->getSerializedName());
+        $this->assertEquals('duxa', $attributesMetadata['duux']->getSerializedName(['a']));
     }
 
     public function testLoadSerializedPath()
@@ -123,8 +123,8 @@ class AttributeLoaderTest extends TestCase
         $attributesMetadata = $classMetadata->getAttributesMetadata();
         $this->assertEquals(new PropertyPath('[one][two]'), $attributesMetadata['three']->getSerializedPath());
         $this->assertEquals(new PropertyPath('[three][four]'), $attributesMetadata['seven']->getSerializedPath());
-        $this->assertSame(new PropertyPath('[five][six]'), $attributesMetadata['eleven']->getSerializedPath());
-        $this->assertSame(new PropertyPath('[six][five]'), $attributesMetadata['eleven']->getSerializedPath(['a']));
+        $this->assertEquals(new PropertyPath('[five][six]'), $attributesMetadata['eleven']->getSerializedPath());
+        $this->assertEquals(new PropertyPath('[six][five]'), $attributesMetadata['eleven']->getSerializedPath(['a']));
     }
 
     public function testLoadSerializedPathInConstructor()
@@ -134,8 +134,8 @@ class AttributeLoaderTest extends TestCase
 
         $attributesMetadata = $classMetadata->getAttributesMetadata();
         $this->assertEquals(new PropertyPath('[one][two]'), $attributesMetadata['three']->getSerializedPath());
-        $this->assertSame(new PropertyPath('[five][six]'), $attributesMetadata['eleven']->getSerializedPath());
-        $this->assertSame(new PropertyPath('[six][five]'), $attributesMetadata['eleven']->getSerializedPath(['a']));
+        $this->assertEquals(new PropertyPath('[five][six]'), $attributesMetadata['eleven']->getSerializedPath());
+        $this->assertEquals(new PropertyPath('[six][five]'), $attributesMetadata['eleven']->getSerializedPath(['a']));
     }
 
     public function testLoadClassMetadataAndMerge()
